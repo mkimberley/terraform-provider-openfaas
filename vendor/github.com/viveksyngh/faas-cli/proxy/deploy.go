@@ -13,7 +13,12 @@ import (
 	"time"
 
 	"github.com/openfaas/faas-cli/stack"
-	"github.com/openfaas/faas/gateway/requests"
+
+	types "github.com/openfaas/faas-provider/types"
+)
+
+var (
+	defaultCommandTimeout = 60 * time.Second
 )
 
 // FunctionResourceRequest defines a request to set function resources
@@ -41,6 +46,16 @@ type DeployFunctionSpec struct {
 	FunctionResourceRequest FunctionResourceRequest
 	ReadOnlyRootFilesystem  bool
 	TLSInsecure             bool
+	Token                   string
+	Namespace               string
+}
+
+func generateFuncStr(spec *DeployFunctionSpec) string {
+
+	if len(spec.Namespace) > 0 {
+		return fmt.Sprintf("%s.%s", spec.FunctionName, spec.Namespace)
+	}
+	return spec.FunctionName
 }
 
 // DeployFunction first tries to deploy a function and if it exists will then attempt
@@ -74,19 +89,13 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 		fprocessTemplate = spec.FProcess
 	}
 
-	if warnInsecureGateway {
-		if (spec.RegistryAuth != "") && !strings.HasPrefix(spec.Gateway, "https") {
-			fmt.Println("WARNING! Communication is not secure, please consider using HTTPS. Letsencrypt.org offers free SSL/TLS certificates.")
-		}
-	}
-
 	gateway := strings.TrimRight(spec.Gateway, "/")
 
 	if spec.Replace {
-		DeleteFunction(gateway, spec.FunctionName)
+		DeleteFunction(gateway, spec.FunctionName, spec.TLSInsecure, "")
 	}
 
-	req := requests.CreateFunctionRequest{
+	req := types.FunctionDeployment{
 		EnvProcess:             fprocessTemplate,
 		Image:                  spec.Image,
 		RegistryAuth:           spec.RegistryAuth,
@@ -98,10 +107,11 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 		Labels:                 &spec.Labels,
 		Annotations:            &spec.Annotations,
 		ReadOnlyRootFilesystem: spec.ReadOnlyRootFilesystem,
+		Namespace:              spec.Namespace,
 	}
 
 	hasLimits := false
-	req.Limits = &requests.FunctionResources{}
+	req.Limits = &types.FunctionResources{}
 	if spec.FunctionResourceRequest.Limits != nil && len(spec.FunctionResourceRequest.Limits.Memory) > 0 {
 		hasLimits = true
 		req.Limits.Memory = spec.FunctionResourceRequest.Limits.Memory
@@ -115,7 +125,7 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 	}
 
 	hasRequests := false
-	req.Requests = &requests.FunctionResources{}
+	req.Requests = &types.FunctionResources{}
 	if spec.FunctionResourceRequest.Requests != nil && len(spec.FunctionResourceRequest.Requests.Memory) > 0 {
 		hasRequests = true
 		req.Requests.Memory = spec.FunctionResourceRequest.Requests.Memory
@@ -133,8 +143,7 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 	reader := bytes.NewReader(reqBytes)
 	var request *http.Request
 
-	timeout := 60 * time.Second
-	client := MakeHTTPClient(&timeout, spec.TLSInsecure)
+	client := MakeHTTPClient(&defaultCommandTimeout, spec.TLSInsecure)
 
 	method := http.MethodPost
 	// "application/json"
@@ -144,7 +153,12 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 
 	var err error
 	request, err = http.NewRequest(method, gateway+"/system/functions", reader)
-	SetAuth(request, gateway)
+	if len(spec.Token) > 0 {
+		SetToken(request, spec.Token)
+	} else {
+		SetAuth(request, gateway)
+	}
+
 	if err != nil {
 		deployOutput += fmt.Sprintln(err)
 		return http.StatusInternalServerError, deployOutput
@@ -152,7 +166,7 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 
 	res, err := client.Do(request)
 	if err != nil {
-		deployOutput += fmt.Sprintln("Is FaaS deployed? Do you need to specify the --gateway flag?")
+		deployOutput += fmt.Sprintln("Is OpenFaaS deployed? Do you need to specify the --gateway flag?")
 		deployOutput += fmt.Sprintln(err)
 		return http.StatusInternalServerError, deployOutput
 	}
@@ -165,7 +179,7 @@ func Deploy(spec *DeployFunctionSpec, update bool, warnInsecureGateway bool) (in
 	case http.StatusOK, http.StatusCreated, http.StatusAccepted:
 		deployOutput += fmt.Sprintf("Deployed. %s.\n", res.Status)
 
-		deployedURL := fmt.Sprintf("URL: %s/function/%s", gateway, spec.FunctionName)
+		deployedURL := fmt.Sprintf("URL: %s/function/%s", gateway, generateFuncStr(spec))
 		deployOutput += fmt.Sprintln(deployedURL)
 	case http.StatusUnauthorized:
 		deployOutput += fmt.Sprintln("unauthorized access, run \"faas-cli login\" to setup authentication for this server")

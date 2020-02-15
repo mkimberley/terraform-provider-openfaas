@@ -10,21 +10,38 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/openfaas/faas/gateway/requests"
+	types "github.com/openfaas/faas-provider/types"
 )
 
 // ListFunctions list deployed functions
-func ListFunctions(gateway string, tlsInsecure bool) ([]requests.Function, error) {
-	var results []requests.Function
+func ListFunctions(gateway string, tlsInsecure bool, namespace string) ([]types.FunctionStatus, error) {
+	return ListFunctionsToken(gateway, tlsInsecure, "", namespace)
+}
+
+// ListFunctionsToken list deployed functions with a token as auth
+func ListFunctionsToken(gateway string, tlsInsecure bool, token string, namespace string) ([]types.FunctionStatus, error) {
+	var results []types.FunctionStatus
 
 	gateway = strings.TrimRight(gateway, "/")
-	timeout := 60 * time.Second
-	client := MakeHTTPClient(&timeout, tlsInsecure)
+	client := MakeHTTPClient(&defaultCommandTimeout, tlsInsecure)
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
 
-	getRequest, err := http.NewRequest(http.MethodGet, gateway+"/system/functions", nil)
-	SetAuth(getRequest, gateway)
+	getEndpoint, err := createSystemEndpoint(gateway, namespace)
+	if err != nil {
+		return results, err
+	}
+
+	getRequest, err := http.NewRequest(http.MethodGet, getEndpoint, nil)
+
+	if len(token) > 0 {
+		SetToken(getRequest, token)
+	} else {
+		SetAuth(getRequest, gateway)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to OpenFaaS on URL: %s", gateway)
 	}

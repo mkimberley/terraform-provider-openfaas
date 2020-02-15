@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ewilde/terraform-provider-openfaas/openfaas"
+	"github.com/mkimberley/terraform-provider-openfaas/openfaas"
 	"github.com/hashicorp/terraform/plugin"
 )
 
