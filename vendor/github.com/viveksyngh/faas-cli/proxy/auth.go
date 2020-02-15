@@ -1,4 +1,4 @@
-// Copyright (c) OpenFaaS Project 2017. All rights reserved.
+// Copyright (c) OpenFaaS Author(s) 2017. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 package proxy
@@ -11,11 +11,38 @@ import (
 
 //SetAuth sets basic auth for the given gateway
 func SetAuth(req *http.Request, gateway string) {
-	username, password, err := config.LookupAuthConfig(gateway)
+	authConfig, err := config.LookupAuthConfig(gateway)
 	if err != nil {
 		// no auth info found
 		return
 	}
 
+	switch authConfig.Auth {
+	case config.BasicAuthType:
+		SetBasicAuth(req, authConfig)
+		return
+	case config.Oauth2AuthType:
+		SetOauth2(req, authConfig)
+		return
+	}
+}
+
+//SetToken sets authentication token
+func SetToken(req *http.Request, token string) {
+	req.Header.Set("Authorization", "Bearer "+token)
+}
+
+//SetBasicAuth set basic authentication
+func SetBasicAuth(req *http.Request, authConfig config.AuthConfig) {
+	username, password, err := config.DecodeAuth(authConfig.Token)
+	if err != nil {
+		// no auth info found
+		return
+	}
 	req.SetBasicAuth(username, password)
+}
+
+//SetOauth2 set oauth2 token
+func SetOauth2(req *http.Request, authConfig config.AuthConfig) {
+	SetToken(req, authConfig.Token)
 }

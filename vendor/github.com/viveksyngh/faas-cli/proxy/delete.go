@@ -14,21 +14,38 @@ import (
 	"github.com/openfaas/faas/gateway/requests"
 )
 
-// DeleteFunction delete a function from the FaaS server
-func DeleteFunction(gateway string, functionName string) error {
+// DeleteFunction delete a function from the OpenFaaS server
+func DeleteFunction(gateway string, functionName string, tlsInsecure bool, namespace string) error {
+	return DeleteFunctionToken(gateway, functionName, tlsInsecure, "", namespace)
+}
+
+//DeleteFunctionToken delete a function with token as auth
+func DeleteFunctionToken(gateway string, functionName string, tlsInsecure bool, token string, namespace string) error {
 	gateway = strings.TrimRight(gateway, "/")
 	delReq := requests.DeleteFunctionRequest{FunctionName: functionName}
 	reqBytes, _ := json.Marshal(&delReq)
 	reader := bytes.NewReader(reqBytes)
 
-	c := http.Client{}
-	req, err := http.NewRequest("DELETE", gateway+"/system/functions", reader)
+	c := MakeHTTPClient(&defaultCommandTimeout, tlsInsecure)
+
+	deleteEndpoint, err := createSystemEndpoint(gateway, namespace)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("DELETE", deleteEndpoint, reader)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	SetAuth(req, gateway)
+
+	if len(token) > 0 {
+		SetToken(req, token)
+	} else {
+		SetAuth(req, gateway)
+	}
+
 	delRes, delErr := c.Do(req)
 
 	if delErr != nil {
