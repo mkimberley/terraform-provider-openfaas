@@ -5,4 +5,5 @@ type Config struct {
 	GatewayURI      string
 	GatewayUserName string
 	GatewayPassword string
+	ProxyNameSpace  string
 }

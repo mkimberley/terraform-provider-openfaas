@@ -2,9 +2,9 @@ package openfaas
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/openfaas/faas-cli/proxy"
 	"github.com/openfaas/faas-cli/stack"
-	"github.com/openfaas/faas/gateway/requests"
-	"github.com/viveksyngh/faas-cli/proxy"
+	types "github.com/openfaas/faas-provider/types"
 )
 
 func expandDeploymentSpec(d *schema.ResourceData, meta interface{}, name string) *proxy.DeployFunctionSpec {
@@ -107,7 +107,7 @@ func expandStringMap(m map[string]interface{}) map[string]string {
 	return list
 }
 
-func flattenOpenFaaSFunctionResource(d *schema.ResourceData, function requests.Function) error {
+func flattenOpenFaaSFunctionResource(d *schema.ResourceData, function types.FunctionStatus) error {
 	d.Set("name", function.Name)
 	d.Set("image", function.Image)
 	d.Set("f_process", function.EnvProcess)
