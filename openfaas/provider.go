@@ -39,6 +39,13 @@ func Provider() terraform.ResourceProvider {
 				Default:     "",
 				Description: "OpenFaaS gateway password",
 			},
+			"namespace": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				Default:     "openfaas",
+				Description: "OpenFaas proxy NameSpace",
+			},
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
@@ -59,10 +66,12 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		TLSInsecure:     d.Get("tls_insecure").(bool),
 		GatewayUserName: d.Get("user_name").(string),
 		GatewayPassword: d.Get("password").(string),
+		ProxyNameSpace:  d.Get("namespace").(string),
 	}
 
 	if config.GatewayUserName != "" && config.GatewayPassword != "" {
-		openfaas_config.UpdateAuthConfig(config.GatewayURI, config.GatewayUserName, config.GatewayPassword)
+		token := openfaas_config.EncodeAuth(config.GatewayUserName, config.GatewayPassword)
+		openfaas_config.UpdateAuthConfig(config.GatewayURI, token, "oauth2")
 	}
 
 	return config, nil

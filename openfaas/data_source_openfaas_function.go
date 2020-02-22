@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/viveksyngh/faas-cli/proxy"
+	"github.com/openfaas/faas-cli/proxy"
 )
 
 func dataSourceOpenFaaSFunction() *schema.Resource {
@@ -45,7 +45,7 @@ func dataSourceOpenFaaSFunctionRead(d *schema.ResourceData, meta interface{}) er
 	config := meta.(Config)
 
 	log.Printf("[DEBUG] Reading function Balancer: %s", name)
-	function, err := proxy.GetFunctionInfo(config.GatewayURI, name, config.TLSInsecure)
+	function, err := proxy.GetFunctionInfo(config.GatewayURI, name, config.TLSInsecure, config.ProxyNameSpace)
 	if err != nil {
 		return fmt.Errorf("error retrieving function: %s", err)
 	}

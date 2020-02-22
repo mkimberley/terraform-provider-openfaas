@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/viveksyngh/faas-cli/proxy"
+	"github.com/openfaas/faas-cli/proxy"
 )
 
 func resourceOpenFaaSFunction() *schema.Resource {
@@ -123,7 +123,7 @@ func resourceOpenFaaSFunctionCreate(d *schema.ResourceData, meta interface{}) er
 func resourceOpenFaaSFunctionRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
 	config := meta.(Config)
-	function, err := proxy.GetFunctionInfo(config.GatewayURI, name, config.TLSInsecure)
+	function, err := proxy.GetFunctionInfo(config.GatewayURI, name, config.TLSInsecure, config.ProxyNameSpace)
 
 	if err != nil {
 		if isFunctionNotFound(err) {
@@ -153,7 +153,7 @@ func resourceOpenFaaSFunctionDelete(d *schema.ResourceData, meta interface{}) er
 	name := d.Get("name").(string)
 	config := meta.(Config)
 
-	err := proxy.DeleteFunction(config.GatewayURI, name)
+	err := proxy.DeleteFunction(config.GatewayURI, name, config.TLSInsecure, config.ProxyNameSpace)
 	return err
 }
 
