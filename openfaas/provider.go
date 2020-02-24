@@ -1,9 +1,10 @@
 package openfaas
 
 import (
+	"log"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"log"
 
 	openfaas_config "github.com/openfaas/faas-cli/config"
 )
@@ -43,7 +44,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
-				Default:     "openfaas",
+				Default:     "",
 				Description: "OpenFaas proxy NameSpace",
 			},
 		},

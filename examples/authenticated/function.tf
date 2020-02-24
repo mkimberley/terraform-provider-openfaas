@@ -2,7 +2,7 @@ resource "openfaas_function" "function_test" {
   name            = "test-function"
   image           = "functions/alpine:latest"
   f_process       = "env"
-  labels {
+  labels = {
     Group       = "London"
     Environment = "Test"
   }
@@ -12,11 +12,11 @@ resource "openfaas_function" "function_test" {
     cpu    = "100m"
   }
 
-  env_vars {
+  env_vars = {
     database_name = "${postgresql_database.function_db.name}"
   }
 
-  annotations {
-    CreatedDate = "Mon Sep  3 07:15:55 BST 2018"
+  annotations =  {
+    CreatedDate = "Mon 24 Feb 21:32:02 GMT 2020"
   }
 }
