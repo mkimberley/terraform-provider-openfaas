@@ -104,12 +104,12 @@ func testAccOpenFaaSFunctionConfig_basic(functionName string) string {
   name            = "%s"
   image           = "functions/alpine:latest"
   f_process       = "sha512sum"
-  labels {
+  labels = {
     Name        = "TestAccOpenFaaSFunction_basic"
     Environment = "Test"
   }
 
-  annotations {
+  annotations = {
     CreatedDate = "Mon Sep  3 07:15:55 BST 2018"
   }
 

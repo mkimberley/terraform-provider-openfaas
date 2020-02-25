@@ -44,12 +44,12 @@ func testAccDataSourceOpenFaaSFunctionConfigBasic(functionName string) string {
     Environment = "Test"
   }
 
-  annotations {
+  annotations = {
     CreatedDate = "Mon Sep  3 07:15:55 BST 2018"
   }
 }
 
 data "openfaas_function" "function_test" {
-	name = "${openfaas_function.function_test.name}"
+	name = openfaas_function.function_test.name
 }`, functionName)
 }

@@ -72,7 +72,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	if config.GatewayUserName != "" && config.GatewayPassword != "" {
 		token := openfaas_config.EncodeAuth(config.GatewayUserName, config.GatewayPassword)
-		openfaas_config.UpdateAuthConfig(config.GatewayURI, token, "oauth2")
+		openfaas_config.UpdateAuthConfig(config.GatewayURI, token, "basic")
 	}
 
 	return config, nil
