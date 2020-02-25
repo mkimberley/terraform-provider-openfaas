@@ -39,7 +39,7 @@ func testAccDataSourceOpenFaaSFunctionConfigBasic(functionName string) string {
   name            = "%s"
   image           = "functions/alpine:latest"
   f_process       = "sha512sum"
-  labels {
+  labels = {
     Name        = "TestAccOpenFaaSFunction_basic"
     Environment = "Test"
   }
